@@ -1,33 +1,95 @@
-#include <cstdlib>
-#include <new>
+#include <memory>
+#include <cstddef>
 
-template <typename T>
+template<typename T, typename Allocator = std::allocator<T>> 
 class Vector {
-    private:
-        size_t capacity{}, size{};
-        T* data;
+        T* data_;
+        size_t capacity_;
+        size_t size_;
+        Allocator alloc_;
 
     public:
-        Vector(size_t initialCapacity) 
-            : capacity(initialCapacity), size(0) { data = static_cast<T*>(::operator new(sizeof(T) * capacity)); }
+        Vector()
+            : data_(nullptr) 
+            , capacity_(0)
+            , size_(0)
+            , alloc_() 
+        {}
+
+        Vector(size_t initial_capacity) 
+            : data_(nullptr)
+            , capacity_(initial_capacity)
+            , size_(0)
+            , alloc_()
+        { 
+            data_ = alloc_.allocate(initial_capacity);   
+        }
 
         ~Vector() {
-            for (size_t i = 0; i < size; i++)
-                data[i].~T();
-            ::operator delete(data);
+            for (size_t i = 0; i < size_; ++i) {
+                std::destroy_at(&data_[i]);
+            }
+
+            if (data_) {
+                alloc_.deallocate(data_, capacity_);
+            }
         }
 
-        void push_back(const T& newElement) { new (&data[size++]) T(newElement); }
-
-        T pop_back() {
-            T lastElement = std::move(data[--size]);
-            data[size].~T();
-            return lastElement;
+        T& operator[](size_t index) { 
+            return data_[index]; 
         }
 
-        size_t get_size() const { return size; }
+        const T& operator[](size_t index) const { 
+            return data_[index]; 
+        }
 
-        T& operator[](size_t index) { return data[index]; }
+        void push_back(const T& new_element) { 
+            if (size_ == capacity_) {
+                size_t new_capacity = (capacity_ == 0) ? 1 : capacity_ * 2;
+                T* new_data = alloc_.allocate(new_capacity);
+                
+                for (size_t i = 0; i < size_; ++i) {
+                    std::construct_at(&new_data[i], std::move(data_[i]));
+                    std::destroy_at(&data_[i]);
+                }
 
-        const T& operator[](size_t index) const { return data[index]; }
+                if (data_) {
+                    alloc_.deallocate(data_, capacity_);
+                }
+
+                data_ = new_data;
+                capacity_ = new_capacity;
+            }
+
+            std::construct_at(&data_[size_], new_element);
+            ++size_;
+        }
+
+        void push_back(T&& new_element) {
+            if (size_ == capacity_) {
+                size_t new_capacity = (capacity_ == 0) ? 1 : capacity_ * 2;
+                T* new_data = alloc_.allocate(new_capacity);
+
+                for (size_t i = 0; i < size_; ++i) {
+                    std::construct_at(&new_data[i], std::move(data_[i]));
+                    std::destroy_at(&data_[i]);
+                }
+
+                if (data_) alloc_.deallocate(data_, capacity_);
+
+                data_ = new_data;
+                capacity_ = new_capacity;
+            }
+
+            std::construct_at(&data_[size_], std::move(new_element));
+            ++size_;
+        }
+
+        size_t capacity() const {
+            return capacity_;
+        }
+
+        size_t size() const {
+            return size_;
+        }
 };
