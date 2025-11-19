@@ -1,2 +1,2 @@
 # Vector
-Welcome to my custom implementation of the C++ 'std::Vector' container! This was done in an effort to learn low-level memory management in C++ as a newbie to the language. Vector.h contains all the class logic, and main.cpp contains some code to test the implementation.
+Welcome to my custom implementation of the C++ `std::Vector` container! This was done in an effort to learn low-level memory management in C++ as a newbie to the language. Vector.h contains all the class logic, and main.cpp contains some code to test the implementation.
